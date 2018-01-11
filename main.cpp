@@ -47,11 +47,12 @@ static void init(void)
 	joints.push_back( new Joint( vec3(1.,0.,0.), vec3(-40,0,0) ) );
 	joints.push_back( new Joint( vec3(2.,0.,0.), vec3(-20,0,0) ) );
 	joints.push_back( new Joint( vec3(3.,0.,0.), vec3(30,0,0) ) );
+	joints.push_back( new Joint( vec3(0.,0.,0.), vec3(0,0,0) ) );
 
 	f1 = new Figure( 1., joints[0], joints[1] );
 	f2 = new Figure( 1., joints[1], joints[2] );
 	f3 = new Figure( 1., joints[2], joints[3] );
-	f4 = new Figure( 1., joints[3], NULL );
+	f4 = new Figure( 1., joints[3], joints[4] );
 }
 
 void drawSquare( vec3 p1, vec3 p2, vec3 p3, vec3 p4, vec3 color, GLenum mode ){
@@ -83,28 +84,36 @@ vec3 getEndPoint( Figure * f, vec3 startPosition, vec3 startRotation ){
     return startPosition.addition( vec3( f->getLength()*cos( startRotation.getX()*PI/180. ), f->getLength()*sin( startRotation.getX()*PI/180. ),0 ) );
 }
 
-void drawIsolatedFigure( Figure * f, vec3 position, vec3 rotation, vec3 color ){
-    vec3 p1 = position;
-    vec3 p2 = getEndPoint( f, position, rotation );
+void drawIsolatedFigure( Figure * f, vec3 color ){
+    vec3 p1 = f->getStartJoint()->getRelPosition();
+    vec3 p2 = f->getEndJoint()->getRelPosition();
 
     drawLine( p1, p2, color );
 }
-void drawIsolatedJoint( Joint * j, vec3 position, vec3 rotation, vec3 color ){
-    vec3 p1 = position;
+void drawIsolatedJoint( Joint * j, vec3 color ){
+    vec3 p1 = j->getRelPosition();
 
     drawPoint( p1, color );
 }
+void draw( Joint * j, vec3 color ){
+    drawIsolatedJoint( j, blue );
+    if( j->getOutFigure() != NULL ){
+        drawIsolatedFigure( j->getOutFigure(), color );
+    }
 
-void drawFigure( Figure * f, vec3 startPosition, vec3 startRotation, vec3 color ){
-    drawIsolatedJoint( f->getStartJoint(), startPosition, startRotation, blue );
+    if( j->getOutFigure() != NULL && j->getOutFigure()->getEndJoint() != NULL ){
+        draw( j->getOutFigure()->getEndJoint(), color );
+    }
+}
 
-    vec3 endPosition = getEndPoint( f, startPosition, startRotation );
-    drawIsolatedFigure( f, startPosition, startRotation, color );
+void calculateJoint( Joint * j, vec3 startPosition, vec3 startRotation ){
+    j->setRelPosition( startPosition );
+    j->setRelRotation( startRotation );
 
-    Joint * endJoint = f->getEndJoint();
-    if( endJoint != NULL && endJoint->getOutFigure() != NULL ){
-        vec3 endRotation = startRotation.addition( endJoint->getRotation() );
-        drawFigure( endJoint->getOutFigure(), endPosition, endRotation, color );
+    if( j->getOutFigure() != NULL && j->getOutFigure()->getEndJoint() != NULL ){
+        vec3 endPosition = getEndPoint( j->getOutFigure(), startPosition, startRotation );
+        vec3 endRotation = startRotation.addition( j->getOutFigure()->getEndJoint()->getRotation() );
+        calculateJoint( j->getOutFigure()->getEndJoint(), endPosition, endRotation );
     }
 }
 
@@ -124,7 +133,8 @@ void display(void)
 
 	glLoadIdentity();
 
-    drawFigure( f1, f1->getStartJoint()->getPosition(), f1->getStartJoint()->getRotation(), red );
+    calculateJoint( joints[0], joints[0]->getPosition(), joints[0]->getRotation() );
+    draw( joints[0], red );
 
 	glutSwapBuffers();
 }

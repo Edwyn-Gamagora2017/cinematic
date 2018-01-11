@@ -13,6 +13,8 @@ class Joint
     private:
         vec3 position;
         vec3 rotation;
+        vec3 relPosition;
+        vec3 relRotation;
         Figure * inFigure;
         Figure * outFigure;
 
@@ -27,8 +29,14 @@ class Joint
 
         vec3 getPosition();
         vec3 getRotation();
+        vec3 getRelPosition();
+        vec3 getRelRotation();
         Figure * getInFigure();
         Figure * getOutFigure();
+        void setPosition( vec3 pos );
+        void setRotation( vec3 rot );
+        void setRelPosition( vec3 pos );
+        void setRelRotation( vec3 rot );
         void setInFigure( Figure * f );
         void setOutFigure( Figure * f );
 
