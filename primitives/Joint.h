@@ -15,11 +15,13 @@ class Joint
         vec3 rotation;
         Figure * inFigure;
         Figure * outFigure;
+        float maxDegrees;
 
     public:
         /** Default constructor */
         Joint( vec3 startPosition );
         Joint( vec3 startPosition, vec3 startRotation );
+        Joint( vec3 startPosition, vec3 startRotation, float maxDegrees );
         /** Default destructor */
         virtual ~Joint();
 
@@ -29,6 +31,7 @@ class Joint
         vec3 getRotation();
         Figure * getInFigure();
         Figure * getOutFigure();
+        float getMaxDegrees();
         void setPosition( vec3 pos );
         void setRotation( vec3 rot );
         void setInFigure( Figure * f );

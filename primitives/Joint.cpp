@@ -2,17 +2,17 @@
 
 #include<iostream>
 
-Joint::Joint(vec3 startPosition, vec3 startRotation )
-{
+Joint::Joint( vec3 startPosition, vec3 startRotation, float maxDegrees ){
     this->position = startPosition;
     this->rotation = startRotation;
+    this->maxDegrees = maxDegrees;
 }
 
+Joint::Joint(vec3 startPosition, vec3 startRotation )
+: Joint::Joint( startPosition, startRotation, 360 ){}
+
 Joint::Joint(vec3 startPosition)
-{
-    this->position = startPosition;
-    this->rotation = vec3(0,0,0);
-}
+: Joint::Joint( startPosition, vec3(0,0,0) ){}
 
 void Joint::rotate(Axe axe, float degrees)
 {
@@ -25,6 +25,9 @@ vec3 Joint::getPosition(){
 }
 vec3 Joint::getRotation(){
     return this->rotation;
+}
+float Joint::getMaxDegrees(){
+    return this->maxDegrees;
 }
 void Joint::setPosition( vec3 pos ){
     this->position = pos;

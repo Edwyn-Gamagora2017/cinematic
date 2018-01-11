@@ -17,6 +17,7 @@
 					<Add directory="../M_TP01_E01" />
 					<Add directory="forms" />
 					<Add directory="forms/structure" />
+					<Add directory="primitives" />
 				</Compiler>
 			</Target>
 			<Target title="Release">
@@ -31,6 +32,7 @@
 					<Add directory="../M_TP01_E01" />
 					<Add directory="forms" />
 					<Add directory="forms/structure" />
+					<Add directory="primitives" />
 				</Compiler>
 				<Linker>
 					<Add option="-s" />
@@ -51,6 +53,10 @@
 			<Add directory="C:/Program Files (x86)/CodeBlocks/MinGW/lib" />
 		</Linker>
 		<Unit filename="main.cpp" />
+		<Unit filename="primitives/Figure.cpp" />
+		<Unit filename="primitives/Figure.h" />
+		<Unit filename="primitives/Joint.cpp" />
+		<Unit filename="primitives/Joint.h" />
 		<Unit filename="utils/utils.cpp" />
 		<Unit filename="utils/utils.h" />
 		<Unit filename="utils/vec3.cpp" />
