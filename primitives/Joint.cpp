@@ -6,8 +6,6 @@ Joint::Joint(vec3 startPosition, vec3 startRotation )
 {
     this->position = startPosition;
     this->rotation = startRotation;
-    this->relPosition = startPosition;
-    this->relRotation = startRotation;
 }
 
 Joint::Joint(vec3 startPosition)
@@ -28,23 +26,11 @@ vec3 Joint::getPosition(){
 vec3 Joint::getRotation(){
     return this->rotation;
 }
-vec3 Joint::getRelPosition(){
-    return this->relPosition;
-}
-vec3 Joint::getRelRotation(){
-    return this->relRotation;
-}
 void Joint::setPosition( vec3 pos ){
     this->position = pos;
 }
 void Joint::setRotation( vec3 rot ){
     this->rotation = rot;
-}
-void Joint::setRelPosition( vec3 pos ){
-    this->relPosition = pos;
-}
-void Joint::setRelRotation( vec3 rot ){
-    this->relRotation = rot;
 }
 void Joint::setInFigure( Figure * f ){
     this->inFigure = f;

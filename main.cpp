@@ -86,13 +86,13 @@ vec3 getEndPoint( Figure * f, vec3 startPosition, vec3 startRotation ){
 }
 
 void drawIsolatedFigure( Figure * f, vec3 color ){
-    vec3 p1 = f->getStartJoint()->getRelPosition();
-    vec3 p2 = f->getEndJoint()->getRelPosition();
+    vec3 p1 = f->getStartJoint()->getPosition();
+    vec3 p2 = f->getEndJoint()->getPosition();
 
     drawLine( p1, p2, color );
 }
 void drawIsolatedJoint( Joint * j, vec3 color ){
-    vec3 p1 = j->getRelPosition();
+    vec3 p1 = j->getPosition();
 
     drawPoint( p1, color );
 }
@@ -108,8 +108,8 @@ void draw( Joint * j, vec3 color ){
 }
 
 void calculateJoint( Joint * j, vec3 startPosition, vec3 startRotation ){
-    j->setRelPosition( startPosition );
-    j->setRelRotation( startRotation );
+    j->setPosition( startPosition );
+    j->setRotation( startRotation );
 
     if( j->getOutFigure() != NULL && j->getOutFigure()->getEndJoint() != NULL ){
         vec3 endPosition = getEndPoint( j->getOutFigure(), startPosition, startRotation );
@@ -119,17 +119,17 @@ void calculateJoint( Joint * j, vec3 startPosition, vec3 startRotation ){
 }
 
 bool isTargetReached( Joint * j, vec3 target ){
-    return j->getRelPosition().soustraction( target ).norme() < 0.05;
+    return j->getPosition().soustraction( target ).norme() < 0.05;
 }
 
 void InverseCinematic( Joint * joint, vec3 targetPosition, bool fromBegin ){
-    joint->setRelPosition( targetPosition );
+    joint->setPosition( targetPosition );
 
     Figure * figure = (fromBegin?joint->getOutFigure():joint->getInFigure());
     if( figure != NULL ){
         Joint * otherJoint = fromBegin?figure->getEndJoint():figure->getStartJoint();
         if( otherJoint != NULL ){
-            vec3 vecNewTarget = otherJoint->getRelPosition().soustraction( targetPosition ).normalized().multiplication( figure->getLength() );
+            vec3 vecNewTarget = otherJoint->getPosition().soustraction( targetPosition ).normalized().multiplication( figure->getLength() );
             vec3 newTarget = targetPosition.addition( vecNewTarget );
 
             // Update Original Angle
@@ -149,8 +149,8 @@ void UpdateRotations( std::deque<Joint *> j ){
         if( figure != NULL ){
             Joint * otherJoint = figure->getEndJoint();
             if( otherJoint != NULL ){
-                vec3 targetPosition = joint->getRelPosition();
-                vec3 vecNewTarget = otherJoint->getRelPosition().soustraction( targetPosition ).normalized().multiplication( figure->getLength() );
+                vec3 targetPosition = joint->getPosition();
+                vec3 vecNewTarget = otherJoint->getPosition().soustraction( targetPosition ).normalized().multiplication( figure->getLength() );
                 vec3 newTarget = targetPosition.addition( vecNewTarget );
 
                 // Update Original Angle
