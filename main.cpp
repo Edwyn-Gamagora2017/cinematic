@@ -21,8 +21,8 @@
 
 #define WIDTH  600
 #define HEIGHT 600
-float angleX=0.0f; //angle de rotation en Y de la scene
-float angleY=0.0f; //angle de rotation en X de la scene
+float mouseX=0.0f;
+float mouseY=0.0f;
 int orthoD = 4;
 
 int selectedJoint = 0;
@@ -36,23 +36,24 @@ vec3 black( 0,0,0 );
 Figure *f1, *f2, *f3, *f4;
 std::deque<Joint*> joints;
 
-vec3 targetPoint( -4, 3, 0 );
+vec3 startP( 0, 0, 0 );
+vec3 targetP( -3, 3, 0 );
 
 /* initialisation d'OpenGL*/
 static void init(void)
 {
 	glClearColor(0.0, 0.0, 0.0, 0.0);
 
-	joints.push_back( new Joint( vec3(0.,0.,0.), vec3(15,0,0) ) );
+	joints.push_back( new Joint( startP, vec3(15,0,0) ) );
 	joints.push_back( new Joint( vec3(1.,0.,0.), vec3(-40,0,0) ) );
 	joints.push_back( new Joint( vec3(2.,0.,0.), vec3(-20,0,0) ) );
 	joints.push_back( new Joint( vec3(3.,0.,0.), vec3(30,0,0) ) );
 	joints.push_back( new Joint( vec3(0.,0.,0.), vec3(0,0,0) ) );
 
-	f1 = new Figure( 1., joints[0], joints[1] );
-	f2 = new Figure( 1., joints[1], joints[2] );
-	f3 = new Figure( 1., joints[2], joints[3] );
-	f4 = new Figure( 1., joints[3], joints[4] );
+	f1 = new Figure( 1.2, joints[0], joints[1] );
+	f2 = new Figure( .3, joints[1], joints[2] );
+	f3 = new Figure( .8, joints[2], joints[3] );
+	f4 = new Figure( 1.7, joints[3], joints[4] );
 }
 
 void drawSquare( vec3 p1, vec3 p2, vec3 p3, vec3 p4, vec3 color, GLenum mode ){
@@ -117,13 +118,52 @@ void calculateJoint( Joint * j, vec3 startPosition, vec3 startRotation ){
     }
 }
 
-bool isTargetReached( Figure * f, vec3 startPosition, vec3 startRotation, vec3 target ){
-    vec3 p = getEndPoint( f, startPosition, startRotation );
-    return p.soustraction( target ).norme() < 0.05;
+bool isTargetReached( Joint * j, vec3 target ){
+    return j->getRelPosition().soustraction( target ).norme() < 0.05;
 }
 
-void InverseCinematic(){
+void InverseCinematic( Joint * joint, vec3 targetPosition, bool fromBegin ){
+    joint->setRelPosition( targetPosition );
 
+    Figure * figure = (fromBegin?joint->getOutFigure():joint->getInFigure());
+    if( figure != NULL ){
+        Joint * otherJoint = fromBegin?figure->getEndJoint():figure->getStartJoint();
+        if( otherJoint != NULL ){
+            vec3 vecNewTarget = otherJoint->getRelPosition().soustraction( targetPosition ).normalized().multiplication( figure->getLength() );
+            vec3 newTarget = targetPosition.addition( vecNewTarget );
+
+            // Update Original Angle
+            /*vec3 oldRot = joint->getRotation();
+            joint->setRotation( vec3( acos( (newTarget.getX()-targetPosition.getX())/figure->getLength() )*180/PI, oldRot.getY(), oldRot.getZ() ) );*/
+
+            InverseCinematic( otherJoint, newTarget, fromBegin );
+        }
+    }
+}
+
+void UpdateRotations( std::deque<Joint *> j ){
+    vec3 accRotation(0,0,0);
+    for( int i=0; i<joints.size(); i++ ){
+        Joint * joint = j[i];
+        Figure * figure = joint->getOutFigure();
+        if( figure != NULL ){
+            Joint * otherJoint = figure->getEndJoint();
+            if( otherJoint != NULL ){
+                vec3 targetPosition = joint->getRelPosition();
+                vec3 vecNewTarget = otherJoint->getRelPosition().soustraction( targetPosition ).normalized().multiplication( figure->getLength() );
+                vec3 newTarget = targetPosition.addition( vecNewTarget );
+
+                // Update Original Angle
+                vec3 oldRot = joint->getRotation();
+                float distX = (newTarget.getX()-targetPosition.getX());
+                float distY = (newTarget.getY()-targetPosition.getY());
+                vec3 newRot = vec3( (distY>0?1:-1)*acos( distX/figure->getLength() )*180/PI, oldRot.getY(), oldRot.getZ() );
+
+                joint->setRotation( newRot.soustraction( accRotation ) );
+                accRotation = newRot;
+            }
+        }
+    }
 }
 
 void display(void)
@@ -133,8 +173,23 @@ void display(void)
 
 	glLoadIdentity();
 
-    calculateJoint( joints[0], joints[0]->getPosition(), joints[0]->getRotation() );
+	drawPoint( targetP, green );
+	drawPoint( startP, green );
+
+    /*calculateJoint( joints[0], joints[0]->getPosition(), joints[0]->getRotation() );
+    draw( joints[0], white );*/
+
+    int cinemIT = 0;
+    while( cinemIT < 10 && !( isTargetReached( joints[joints.size()-1], targetP ) ) ){
+        InverseCinematic( joints[joints.size()-1],targetP,false );
+        InverseCinematic( joints[0],startP,true );
+        cinemIT++;
+    }
+    UpdateRotations(joints);
     draw( joints[0], red );
+
+    calculateJoint( joints[0], joints[0]->getPosition(), joints[0]->getRotation() );
+    draw( joints[0], white );
 
 	glutSwapBuffers();
 }
@@ -175,10 +230,12 @@ void keyboard(unsigned char key, int x, int y)
 
 GLvoid manageMouse(int x, int y)
 {
-	angleX=x*720/WIDTH;
-	angleY=-(y*180/HEIGHT-90)*4;
+	mouseX=x/(float)WIDTH;
+	mouseY=1.-y/(float)HEIGHT;
 
-	//glutPostRedisplay();
+	targetP = vec3( -orthoD+(2*mouseX*orthoD), -orthoD+(2*mouseY*orthoD), 0 );
+
+	glutPostRedisplay();
 }
 
 int main(int argc, char **argv)

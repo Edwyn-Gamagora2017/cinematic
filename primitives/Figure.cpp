@@ -6,6 +6,7 @@ Figure::Figure( float length, Joint * startJoint, Joint * endJoint ){
     this->startJoint = startJoint;
     if( startJoint != NULL ){ startJoint->setOutFigure( this ); }
     this->endJoint = endJoint;
+    if( endJoint != NULL ){ endJoint->setInFigure( this ); }
 }
 
 Figure::~Figure()
