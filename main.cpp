@@ -144,34 +144,16 @@ void InverseCinematic( Joint * joint, vec3 targetPosition, bool fromBegin, vec3 
             vec3 prodVet = baseTarget.soustraction( targetPosition ).normalized().produitVectoriel( newTarget.soustraction( targetPosition ).normalized() );
             float angle = (prodVet.getZ()<0?-1:1)*acos( prod )*180/PI;
 
-            /*joint->setRotation( vec3( angle, joint->getRotation().getY(), joint->getRotation().getZ() ) );
-            accRotation.setX( accRotation.getX()+angle );*/
-
-            /*vec3 vecNewTarget = otherJoint->getPosition().soustraction( targetPosition ).normalized().multiplication( figure->getLength() );
-            vec3 newTarget = targetPosition.addition( vecNewTarget );*/
-
-            /*vec3 baseTarget = getEndPoint( figure, targetPosition, accRotation );
-            float angle = acos( newTarget.normalized().produitScalaire( baseTarget.normalized() ) )*180/PI;*/
-
-            // Calculate Angle
-            /*vec3 oldRot = joint->getRotation();
-            float distX = (newTarget.getX()-targetPosition.getX());
-            float distY = (newTarget.getY()-targetPosition.getY());
-            vec3 angle = vec3( (distY>0?1:-1)*acos( distX/figure->getLength() )*180/PI, oldRot.getY(), oldRot.getZ() );
-            vec3 localAngle = angle.soustraction( accRotation );*/
-
-            /*if( localAngle.getX() < -joint->getMaxDegrees() || localAngle.getX() > joint->getMaxDegrees() ){
+            if( angle < -joint->getMaxDegrees() || angle > joint->getMaxDegrees() ){
                 // Calculate new position
-                newTarget = getEndPoint( figure, targetPosition, accRotation.addition( vec3((localAngle.getX()>0?1:-1)*joint->getMaxDegrees(),angle.getY(),angle.getZ()) ));
+                newTarget = getEndPoint( figure, targetPosition, accRotation.addition( vec3((angle>0?1:-1)*joint->getMaxDegrees(),joint->getRotation().getY(),joint->getRotation().getZ()) ));
 
-                float distX = (newTarget.getX()-targetPosition.getX());
-                float distY = (newTarget.getY()-targetPosition.getY());
-                angle = vec3( (distY>0?1:-1)*acos( distX/figure->getLength() )*180/PI, oldRot.getY(), oldRot.getZ() );
-            }*/
+                prod = baseTarget.soustraction( targetPosition ).normalized().produitScalaire( newTarget.soustraction( targetPosition ).normalized() );
+                prodVet = baseTarget.soustraction( targetPosition ).normalized().produitVectoriel( newTarget.soustraction( targetPosition ).normalized() );
+                angle = (prodVet.getZ()<0?-1:1)*acos( prod )*180/PI;
+            }
 
-            //joint->setRotation( vec3( angle, joint->getRotation().getY(), joint->getRotation().getZ() ) );
             accRotation.setX( accRotation.getX()+angle );
-            //accRotation = accRotation.addition( angle );
             // End angle
 
             return InverseCinematic( otherJoint, newTarget, fromBegin, accRotation );
@@ -217,7 +199,7 @@ void display(void)
     draw( joints[0], white );*/
 
     int cinemIT = 0;
-    while( cinemIT < 10 && !( isTargetReached( joints[joints.size()-1], targetP ) ) ){
+    while( cinemIT < 1 && !( isTargetReached( joints[joints.size()-1], targetP ) ) ){
         InverseCinematic( joints[joints.size()-1],targetP,false,vec3(0,0,0) );
         InverseCinematic( joints[0],startP,true,vec3(0,0,0) );
         cinemIT++;
