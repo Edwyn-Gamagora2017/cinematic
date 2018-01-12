@@ -32,19 +32,22 @@ vec3 red( 1,0,0 );
 vec3 green( 0,1,0 );
 vec3 blue( 0,0,1 );
 vec3 black( 0,0,0 );
+vec3 yellow( 1,1,0 );
+
+// TODO target em cima de um ponto : normalizacao de vetor nulo
 
 std::deque<Joint*> joints;
 std::deque<Figure*> figures;
 
 vec3 startP( 0, 0, 0 );
-vec3 targetP( -3, 3, 0 );
+vec3 targetP( 5, -1, 0 );
 
 /* initialisation d'OpenGL*/
 static void init(void)
 {
 	glClearColor(0.0, 0.0, 0.0, 0.0);
 
-	joints.push_back( new Joint( startP, vec3(15,0,0), 45 ) );
+	joints.push_back( new Joint( startP, vec3(15,0,0), 90 ) );
 	joints.push_back( new Joint( vec3(1.,0.,0.), vec3(-40,0,0), 20 ) );
 	joints.push_back( new Joint( vec3(2.,0.,0.), vec3(-20,0,0), 30 ) );
 	joints.push_back( new Joint( vec3(3.,0.,0.), vec3(30,0,0), 40 ) );
@@ -128,34 +131,32 @@ bool isTargetReached( Joint * j, vec3 target ){
 
 void InverseCinematic( Joint * joint, vec3 targetPosition, bool fromBegin, vec3 accRotation ){
     joint->setPosition( targetPosition );
-
     Figure * figure = (fromBegin?joint->getOutFigure():joint->getInFigure());
+
     if( figure != NULL ){
-        Joint * otherJoint = fromBegin?figure->getEndJoint():figure->getStartJoint();
+        Joint * otherJoint = (fromBegin?figure->getEndJoint():figure->getStartJoint());
         if( otherJoint != NULL ){
             vec3 vecNewTarget = otherJoint->getPosition().soustraction( targetPosition ).normalized().multiplication( figure->getLength() );
             vec3 newTarget = targetPosition.addition( vecNewTarget );
+            vec3 baseTarget = getEndPoint( figure, targetPosition, accRotation );
 
-            // Calculate Angle
-            vec3 oldRot = joint->getRotation();
-            float distX = (newTarget.getX()-targetPosition.getX());
-            float distY = (newTarget.getY()-targetPosition.getY());
-            vec3 angle = vec3( (distY>0?1:-1)*acos( distX/figure->getLength() )*180/PI, oldRot.getY(), oldRot.getZ() );
-            vec3 localAngle = angle.soustraction( accRotation );
+            float prod = baseTarget.soustraction( targetPosition ).normalized().produitScalaire( newTarget.soustraction( targetPosition ).normalized() );
+            vec3 prodVet = baseTarget.soustraction( targetPosition ).normalized().produitVectoriel( newTarget.soustraction( targetPosition ).normalized() );
+            float angle = (prodVet.getZ()<0?-1:1)*acos( prod )*180/PI;
 
-            if( localAngle.getX() < -joint->getMaxDegrees() || localAngle.getX() > joint->getMaxDegrees() ){
+            if( angle < -joint->getMaxDegrees() || angle > joint->getMaxDegrees() ){
                 // Calculate new position
-                newTarget = getEndPoint( figure, targetPosition, accRotation.addition( vec3((localAngle.getX()>0?1:-1)*joint->getMaxDegrees(),angle.getY(),angle.getZ()) ));
+                newTarget = getEndPoint( figure, targetPosition, accRotation.addition( vec3((angle>0?1:-1)*joint->getMaxDegrees(),joint->getRotation().getY(),joint->getRotation().getZ()) ));
 
-                float distX = (newTarget.getX()-targetPosition.getX());
-                float distY = (newTarget.getY()-targetPosition.getY());
-                angle = vec3( (distY>0?1:-1)*acos( distX/figure->getLength() )*180/PI, oldRot.getY(), oldRot.getZ() );
+                prod = baseTarget.soustraction( targetPosition ).normalized().produitScalaire( newTarget.soustraction( targetPosition ).normalized() );
+                prodVet = baseTarget.soustraction( targetPosition ).normalized().produitVectoriel( newTarget.soustraction( targetPosition ).normalized() );
+                angle = (prodVet.getZ()<0?-1:1)*acos( prod )*180/PI;
             }
 
-            accRotation = angle;
+            accRotation.setX( accRotation.getX()+angle );
             // End angle
 
-            InverseCinematic( otherJoint, newTarget, fromBegin, accRotation );
+            return InverseCinematic( otherJoint, newTarget, fromBegin, accRotation );
         }
     }
 }
@@ -169,16 +170,16 @@ void UpdateRotations( std::deque<Joint *> j ){
             Joint * otherJoint = figure->getEndJoint();
             if( otherJoint != NULL ){
                 vec3 targetPosition = joint->getPosition();
+
                 vec3 newTarget = otherJoint->getPosition();
+                vec3 baseTarget = getEndPoint( figure, targetPosition, accRotation );
 
-                // Update Original Angle
-                vec3 oldRot = joint->getRotation();
-                float distX = (newTarget.getX()-targetPosition.getX());
-                float distY = (newTarget.getY()-targetPosition.getY());
-                vec3 newRot = vec3( (distY>0?1:-1)*acos( distX/figure->getLength() )*180/PI, oldRot.getY(), oldRot.getZ() );
+                float prod = baseTarget.soustraction( targetPosition ).normalized().produitScalaire( newTarget.soustraction( targetPosition ).normalized() );
+                vec3 prodVet = baseTarget.soustraction( targetPosition ).normalized().produitVectoriel( newTarget.soustraction( targetPosition ).normalized() );
+                float angle = (prodVet.getZ()<0?-1:1)*acos( prod )*180/PI;
 
-                joint->setRotation( newRot.soustraction( accRotation ) );
-                accRotation = newRot;
+                joint->setRotation( vec3( angle, joint->getRotation().getY(), joint->getRotation().getZ() ) );
+                accRotation.setX( accRotation.getX()+angle );
             }
         }
     }
@@ -198,7 +199,7 @@ void display(void)
     draw( joints[0], white );*/
 
     int cinemIT = 0;
-    while( cinemIT < 10 && !( isTargetReached( joints[joints.size()-1], targetP ) ) ){
+    while( cinemIT < 1 && !( isTargetReached( joints[joints.size()-1], targetP ) ) ){
         InverseCinematic( joints[joints.size()-1],targetP,false,vec3(0,0,0) );
         InverseCinematic( joints[0],startP,true,vec3(0,0,0) );
         cinemIT++;
