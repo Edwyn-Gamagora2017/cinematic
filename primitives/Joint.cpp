@@ -6,6 +6,8 @@ Joint::Joint( vec3 startPosition, vec3 startRotation, float maxDegrees ){
     this->position = startPosition;
     this->rotation = startRotation;
     this->maxDegrees = maxDegrees;
+    this->inFigure = NULL;
+    this->outFigure = NULL;
 }
 
 Joint::Joint(vec3 startPosition, vec3 startRotation )
