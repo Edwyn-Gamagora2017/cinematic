@@ -1,5 +1,5 @@
 # depslib dependency file v1.0
-1516095366 source:c:\users\edwyn luis\documents\lyon\gamagora\simulation\simulation\main.cpp
+1516101939 source:c:\users\edwyn luis\documents\lyon\gamagora\simulation\simulation\main.cpp
 	<windows.h>
 	<GL/glut.h>
 	<GL/glu.h>
@@ -9,8 +9,12 @@
 	<deque>
 	"utils/vec3.h"
 	"utils/utils.h"
+	<ctime>
+	<iostream>
+	<cstdlib>
 	"primitives/Figure.h"
 	"primitives/Joint.h"
+	"primitives/Arm.h"
 
 1301111162 c:\program files (x86)\codeblocks\mingw\include\windows.h
 	<winresrc.h>
@@ -272,4 +276,12 @@
 1516093691 source:c:\users\edwyn luis\documents\lyon\gamagora\simulation\simulation\primitives\joint.cpp
 	"Joint.h"
 	<iostream>
+
+1516099409 source:c:\users\edwyn luis\documents\lyon\gamagora\simulation\simulation\primitives\arm.cpp
+	"Arm.h"
+
+1516099381 c:\users\edwyn luis\documents\lyon\gamagora\simulation\simulation\primitives\arm.h
+	<deque>
+	"Joint.h"
+	"Figure.h"
 

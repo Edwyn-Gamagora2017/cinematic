@@ -9,8 +9,13 @@
 #include "utils/vec3.h"
 #include "utils/utils.h"
 
+#include <ctime>
+#include <iostream>
+#include <cstdlib>
+
 #include "primitives/Figure.h"
 #include "primitives/Joint.h"
+#include "primitives/Arm.h"
 
 /* au cas ou M_PI ne soit defini */
 #ifndef M_PI
@@ -36,31 +41,37 @@ vec3 yellow( 1,1,0 );
 
 // TODO target em cima de um ponto : normalizacao de vetor nulo
 
-std::deque<Joint*> joints;
-std::deque<Figure*> figures;
+std::deque<Joint*> _joints;
+std::deque<Figure*> _figures;
+Arm * _arm;
+int nSolutions = 5;
 
 vec3 startP( 0, 0, 0 );
-vec3 targetP( 0, 0, 0 );
+vec3 targetP( -5, 1, 0 );
 
 /* initialisation d'OpenGL*/
 static void init(void)
 {
 	glClearColor(0.0, 0.0, 0.0, 0.0);
 
-	joints.push_back( new Joint( startP, vec3(15,0,0), 90 ) );
-	joints.push_back( new Joint( vec3(1.,0.,0.), vec3(-40,0,0), 20 ) );
-	joints.push_back( new Joint( vec3(2.,0.,0.), vec3(-20,0,0), 30 ) );
-	joints.push_back( new Joint( vec3(3.,0.,0.), vec3(30,0,0), 40 ) );
-	joints.push_back( new Joint( vec3(3.,0.,0.), vec3(30,0,0), 40 ) );
-	joints.push_back( new Joint( vec3(3.,0.,0.), vec3(30,0,0), 40 ) );
-	joints.push_back( new Joint( vec3(4.,0.,0.), vec3(0,0,0) ) );
+	_joints.push_back( new Joint( startP, vec3(15,0,0), 90 ) );
+	_joints.push_back( new Joint( vec3(1.,0.,0.), vec3(-40,0,0), 20 ) );
+	_joints.push_back( new Joint( vec3(2.,0.,0.), vec3(-20,0,0), 30 ) );
+	_joints.push_back( new Joint( vec3(3.,0.,0.), vec3(30,0,0), 40 ) );
+	_joints.push_back( new Joint( vec3(3.,0.,0.), vec3(30,0,0), 40 ) );
+	_joints.push_back( new Joint( vec3(3.,0.,0.), vec3(30,0,0), 40 ) );
+	_joints.push_back( new Joint( vec3(4.,0.,0.), vec3(0,0,0) ) );
 
-	figures.push_back( new Figure( 1.2, joints[0], joints[1] ) );
-	figures.push_back( new Figure( .3, joints[1], joints[2] ) );
-	figures.push_back( new Figure( .8, joints[2], joints[3] ) );
-	figures.push_back( new Figure( 1., joints[3], joints[4] ) );
-	figures.push_back( new Figure( .4, joints[4], joints[5] ) );
-	figures.push_back( new Figure( .2, joints[5], joints[6] ) );
+	_figures.push_back( new Figure( 1.2, _joints[0], _joints[1] ) );
+	_figures.push_back( new Figure( .3, _joints[1], _joints[2] ) );
+	_figures.push_back( new Figure( .8, _joints[2], _joints[3] ) );
+	_figures.push_back( new Figure( 1., _joints[3], _joints[4] ) );
+	_figures.push_back( new Figure( .4, _joints[4], _joints[5] ) );
+	_figures.push_back( new Figure( .2, _joints[5], _joints[6] ) );
+
+	_arm = new Arm( _joints[0] );
+
+	std::srand(std::time(nullptr)); // use current time as seed for random generator
 }
 
 void drawSquare( vec3 p1, vec3 p2, vec3 p3, vec3 p4, vec3 color, GLenum mode ){
@@ -163,37 +174,77 @@ void InverseCinematic( Joint * joint, vec3 targetPosition, bool fromBegin, vec3 
     }
 }
 
-void InverseCinematic( Joint * joint, vec3 target ){
+void InverseCinematic( Arm * currentArm, vec3 target ){
     int cinemIT = 0;
-    while( cinemIT < 5 && !( isTargetReached( joints[joints.size()-1], target ) ) ){
-        InverseCinematic( joints[joints.size()-1],targetP,false,vec3(0,0,0) );
-        InverseCinematic( joints[0],startP,true,vec3(0,0,0) );
+    while( cinemIT < 5 && !( isTargetReached( currentArm->getEnd(), target ) ) ){
+        InverseCinematic( currentArm->getEnd(),targetP,false,vec3(0,0,0) );
+        InverseCinematic( currentArm->getBegin(),startP,true,vec3(0,0,0) );
         cinemIT++;
     }
 }
 
-void UpdateRotations( std::deque<Joint *> j ){
-    vec3 accRotation(0,0,0);
-    for( int i=0; i<joints.size(); i++ ){
-        Joint * joint = j[i];
-        Figure * figure = joint->getOutFigure();
-        if( figure != NULL ){
-            Joint * otherJoint = figure->getEndJoint();
-            if( otherJoint != NULL ){
-                vec3 targetPosition = joint->getPosition();
+bool isBetterSolution( Arm * currentArm, Arm * newArm, vec3 target ){
+    Joint * endCurrent = currentArm->getEnd();
+    float distCurrent = endCurrent->getPosition().soustraction( target ).norme();
 
-                vec3 newTarget = otherJoint->getPosition();
-                vec3 baseTarget = getEndPoint( figure, targetPosition, accRotation );
+    Joint * endNew = newArm->getEnd();
+    float distNew = endNew->getPosition().soustraction( target ).norme();
 
-                float prod = baseTarget.soustraction( targetPosition ).normalized().produitScalaire( newTarget.soustraction( targetPosition ).normalized() );
-                vec3 prodVet = baseTarget.soustraction( targetPosition ).normalized().produitVectoriel( newTarget.soustraction( targetPosition ).normalized() );
-                float angle = (prodVet.getZ()<0?-1:1)*acos( prod )*180/PI;
+    return( distCurrent > distNew );
+}
 
-                joint->setRotation( vec3( angle, joint->getRotation().getY(), joint->getRotation().getZ() ) );
-                accRotation.setX( accRotation.getX()+angle );
+float ObtainRandomAngle( Joint * j ){
+    int randomAngle = std::rand()%360 - 180;
+    if( randomAngle > 0 && randomAngle > j->getMaxDegrees() ){
+        randomAngle = j->getMaxDegrees();
+    }
+    else if( randomAngle < 0 && randomAngle < -j->getMaxDegrees() ){
+        randomAngle = -j->getMaxDegrees();
+    }
+    return randomAngle;
+}
+
+Arm * bestSolution( Arm * currentArm, vec3 target ){
+    std::deque<Arm*> solutions;
+    Arm * result = currentArm;
+
+    // Creating random arms
+    for( int i=0; i<nSolutions; i++ ){
+        int randomAngle = ObtainRandomAngle( currentArm->getBegin() );
+        solutions.push_back( new Arm( new Joint( vec3(0,0,0), vec3(randomAngle,0,0), currentArm->getBegin()->getMaxDegrees() ) ) );
+    }
+    for( int i=0; i<nSolutions; i++ ){
+        Joint * joint = solutions[i]->getBegin();
+        Joint * armJoint = currentArm->getBegin();
+        while( armJoint != NULL ){
+            if( armJoint->getOutFigure() != NULL && armJoint->getOutFigure()->getEndJoint() != NULL ){
+                int randomAngle = ObtainRandomAngle( armJoint );
+                Joint * newJoint = new Joint( vec3(0,0,0), vec3(randomAngle,0,0), armJoint->getOutFigure()->getEndJoint()->getMaxDegrees() );
+                Figure * newFigure = new Figure( armJoint->getOutFigure()->getLength(), joint, newJoint );
+                joint = newJoint;
+
+                armJoint = armJoint->getOutFigure()->getEndJoint();
+            }
+            else{
+                armJoint = NULL;
             }
         }
     }
+
+    // Cinematic
+    for( int i=0; i<nSolutions; i++ ){
+        InverseCinematic( solutions[i], target );
+
+        if( isBetterSolution( result, solutions[i], target ) ){
+            delete( result );
+            result = solutions[i];
+        }
+        else{
+            delete( solutions[i] );
+        }
+    }
+
+    return result;
 }
 
 void display(void)
@@ -209,14 +260,15 @@ void display(void)
     //directCinematic( joints[0], joints[0]->getPosition(), joints[0]->getRotation(), true );
     //draw( joints[0], white );
 
-    InverseCinematic( joints[0], targetP );
-    draw( joints[0], red );
+    InverseCinematic( _arm, targetP );
+    //draw( _arm->getBegin(), red );
 
-    // The white lines represent the one built based on the angles
-    directCinematic( joints[0], joints[0]->getPosition(), joints[0]->getRotation(), false );
-    draw( joints[0], white );
+    _arm = bestSolution( _arm, targetP );
+    draw( _arm->getBegin(), red );
 
-    //UpdateRotations(joints);  // Deprecated : the rotations are calculated during inverseCinematic
+    // The white lines represent the one built based on the angles [To check if the angles are correct : the white lines will follow the red ones]
+    /*directCinematic( arm->getBegin(), arm->getBegin()->getPosition(), arm->getBegin()->getRotation(), false );
+    draw( arm->getBegin(), white );*/
 
 	glutSwapBuffers();
 }
@@ -239,10 +291,10 @@ void keyboard(unsigned char key, int x, int y)
         selectedJoint = key - '0';
         break;
     case '-':
-        joints[ selectedJoint ]->rotate(Joint::Axe::X, -10);
+        _joints[ selectedJoint ]->rotate(Joint::Axe::X, -10);
         break;
     case '+':
-        joints[ selectedJoint ]->rotate(Joint::Axe::X, 10);
+        _joints[ selectedJoint ]->rotate(Joint::Axe::X, 10);
         break;
 
    case ESC:

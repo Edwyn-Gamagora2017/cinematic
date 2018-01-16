@@ -53,6 +53,8 @@
 			<Add directory="C:/Program Files (x86)/CodeBlocks/MinGW/lib" />
 		</Linker>
 		<Unit filename="main.cpp" />
+		<Unit filename="primitives/Arm.cpp" />
+		<Unit filename="primitives/Arm.h" />
 		<Unit filename="primitives/Figure.cpp" />
 		<Unit filename="primitives/Figure.h" />
 		<Unit filename="primitives/Joint.cpp" />
