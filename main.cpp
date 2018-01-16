@@ -40,7 +40,7 @@ std::deque<Joint*> joints;
 std::deque<Figure*> figures;
 
 vec3 startP( 0, 0, 0 );
-vec3 targetP( 5, -1, 0 );
+vec3 targetP( 0, 0, 0 );
 
 /* initialisation d'OpenGL*/
 static void init(void)
@@ -163,6 +163,15 @@ void InverseCinematic( Joint * joint, vec3 targetPosition, bool fromBegin, vec3 
     }
 }
 
+void InverseCinematic( Joint * joint, vec3 target ){
+    int cinemIT = 0;
+    while( cinemIT < 5 && !( isTargetReached( joints[joints.size()-1], target ) ) ){
+        InverseCinematic( joints[joints.size()-1],targetP,false,vec3(0,0,0) );
+        InverseCinematic( joints[0],startP,true,vec3(0,0,0) );
+        cinemIT++;
+    }
+}
+
 void UpdateRotations( std::deque<Joint *> j ){
     vec3 accRotation(0,0,0);
     for( int i=0; i<joints.size(); i++ ){
@@ -200,12 +209,7 @@ void display(void)
     //directCinematic( joints[0], joints[0]->getPosition(), joints[0]->getRotation(), true );
     //draw( joints[0], white );
 
-    int cinemIT = 0;
-    while( cinemIT < 10 && !( isTargetReached( joints[joints.size()-1], targetP ) ) ){
-        InverseCinematic( joints[joints.size()-1],targetP,false,vec3(0,0,0) );
-        InverseCinematic( joints[0],startP,true,vec3(0,0,0) );
-        cinemIT++;
-    }
+    InverseCinematic( joints[0], targetP );
     draw( joints[0], red );
 
     // The white lines represent the one built based on the angles
