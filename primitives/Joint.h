@@ -13,6 +13,7 @@ class Joint
     private:
         vec3 position;
         vec3 rotation;
+        vec3 initialRotation;
         Figure * inFigure;
         Figure * outFigure;
         float maxDegrees;
@@ -29,6 +30,7 @@ class Joint
 
         vec3 getPosition();
         vec3 getRotation();
+        vec3 getInitialRotation();
         Figure * getInFigure();
         Figure * getOutFigure();
         float getMaxDegrees();

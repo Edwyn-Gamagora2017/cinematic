@@ -114,14 +114,16 @@ void draw( Joint * j, vec3 color ){
     }
 }
 
-void calculateJoint( Joint * j, vec3 startPosition, vec3 startRotation ){
+void directCinematic( Joint * j, vec3 startPosition, vec3 startRotation, bool updateRotation ){
     j->setPosition( startPosition );
-    j->setRotation( startRotation );
+    if( updateRotation ){
+        j->setRotation( startRotation );
+    }
 
     if( j->getOutFigure() != NULL && j->getOutFigure()->getEndJoint() != NULL ){
         vec3 endPosition = getEndPoint( j->getOutFigure(), startPosition, startRotation );
         vec3 endRotation = startRotation.addition( j->getOutFigure()->getEndJoint()->getRotation() );
-        calculateJoint( j->getOutFigure()->getEndJoint(), endPosition, endRotation );
+        directCinematic( j->getOutFigure()->getEndJoint(), endPosition, endRotation, updateRotation );
     }
 }
 
@@ -152,7 +154,7 @@ void InverseCinematic( Joint * joint, vec3 targetPosition, bool fromBegin, vec3 
                 prodVet = baseTarget.soustraction( targetPosition ).normalized().produitVectoriel( newTarget.soustraction( targetPosition ).normalized() );
                 angle = (prodVet.getZ()<0?-1:1)*acos( prod )*180/PI;
             }
-
+            joint->setRotation( vec3( angle, joint->getRotation().getY(), joint->getRotation().getZ() ) );
             accRotation.setX( accRotation.getX()+angle );
             // End angle
 
@@ -195,20 +197,22 @@ void display(void)
 	drawPoint( targetP, green );
 	drawPoint( startP, green );
 
-    /*calculateJoint( joints[0], joints[0]->getPosition(), joints[0]->getRotation() );
-    draw( joints[0], white );*/
+    //directCinematic( joints[0], joints[0]->getPosition(), joints[0]->getRotation(), true );
+    //draw( joints[0], white );
 
     int cinemIT = 0;
-    while( cinemIT < 1 && !( isTargetReached( joints[joints.size()-1], targetP ) ) ){
+    while( cinemIT < 10 && !( isTargetReached( joints[joints.size()-1], targetP ) ) ){
         InverseCinematic( joints[joints.size()-1],targetP,false,vec3(0,0,0) );
         InverseCinematic( joints[0],startP,true,vec3(0,0,0) );
         cinemIT++;
     }
-    UpdateRotations(joints);
     draw( joints[0], red );
 
-    calculateJoint( joints[0], joints[0]->getPosition(), joints[0]->getRotation() );
+    // The white lines represent the one built based on the angles
+    directCinematic( joints[0], joints[0]->getPosition(), joints[0]->getRotation(), false );
     draw( joints[0], white );
+
+    //UpdateRotations(joints);  // Deprecated : the rotations are calculated during inverseCinematic
 
 	glutSwapBuffers();
 }
