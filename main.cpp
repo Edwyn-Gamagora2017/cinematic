@@ -190,7 +190,7 @@ bool isBetterSolution( Arm * currentArm, Arm * newArm, vec3 target ){
     Joint * endNew = newArm->getEnd();
     float distNew = endNew->getPosition().soustraction( target ).norme();
 
-    return( distCurrent > distNew );
+    return( distCurrent > distNew + 0.1 );
 }
 
 float ObtainRandomAngle( Joint * j ){
